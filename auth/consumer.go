@@ -1,13 +1,14 @@
 package auth
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 // 消费者模型定义
 type Consumer interface {
 	// 获取完整消费者标记
 	GetTag() string
-	// 获取消费者的客户端标记
-	GetClientTag() string
 	// 获取用户名标记
 	GetUsername() string
 	// 获取消费者token
@@ -21,6 +22,8 @@ type Consumer interface {
 	// 退出登录
 	OutLogin()
 
+	// 获取消费者的客户端标记
+	getClientTag() string
 	// 赋予消费者新的角色组
 	setRole(role ...Role)
 }
@@ -36,11 +39,12 @@ func newConsumer(auth Auth, tag string, clientTag string) *consumer {
 }
 
 type consumer struct {
-	auth      Auth
-	tag       string // 消费者标记，可以是用户名、token等具有唯一性等内容。
-	clientTag string // 包含客户端标记的消费标记
-	fullTag   string
-	roles     []Role
+	sync.Mutex // 只有setRole会发生写操作，避免验证权限时改写，将其进行加锁
+	auth       Auth
+	tag        string // 消费者标记，可以是用户名等具有唯一性等内容。
+	clientTag  string // 包含客户端标记的消费标记
+	fullTag    string // 完整到标签
+	roles      []Role // 消费者拥有的角色
 }
 
 func (slf *consumer) GetAllRole() []Role {
@@ -57,14 +61,16 @@ func (slf *consumer) ResourceExist(resourceUri string) bool {
 }
 
 func (slf *consumer) setRole(role ...Role) {
+	slf.Lock()
 	slf.roles = role
+	slf.Unlock()
 }
 
 func (slf *consumer) GetUsername() string {
 	return slf.tag
 }
 
-func (slf *consumer) GetClientTag() string {
+func (slf *consumer) getClientTag() string {
 	return slf.clientTag
 }
 

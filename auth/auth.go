@@ -13,6 +13,8 @@ type Auth interface {
 	Login() LoginModeSelector
 	// 获取消费者
 	GetConsumer(tag string) (Consumer, error)
+	// 通过Token获取消费者
+	GetConsumerWithToken(token string) (Consumer, error)
 	// 获取所有消费者
 	GetAllConsumer() []Consumer
 	// 踢出消费者
@@ -72,6 +74,14 @@ type auth struct {
 	roleSetter func(username string, roleHelper *RoleHelper) ([]Role, error) // 消费者资源查询函数
 }
 
+func (slf *auth) GetConsumerWithToken(token string) (Consumer, error) {
+	tag, err := slf.rsa.RsaDecrypt([]byte(token))
+	if err != nil {
+		return nil, err
+	}
+	return slf.GetConsumer(string(tag))
+}
+
 func (slf *auth) RefreshRole(consumer Consumer) error {
 	if slf.roleSetter != nil {
 		roles, err := slf.roleSetter(consumer.GetUsername(), &RoleHelper{})
@@ -97,7 +107,7 @@ func (slf *auth) SetRoleCheck(roleSetter func(username string, roleHelper *RoleH
 func (slf *auth) GetMultiConsumer(consumer Consumer) []Consumer {
 	var target []Consumer
 	for _, c := range slf.GetAllConsumer() {
-		if c.GetUsername() == consumer.GetUsername() && (c.GetClientTag() != consumer.GetClientTag()) {
+		if c.GetUsername() == consumer.GetUsername() && (c.getClientTag() != consumer.getClientTag()) {
 			target = append(target, c)
 		}
 	}

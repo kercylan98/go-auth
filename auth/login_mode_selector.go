@@ -6,7 +6,7 @@ import (
 
 // http://www.ruanyifeng.com/blog/2019/04/oauth-grant-types.html
 type LoginModeSelector interface {
-	// 密码登录
+	// 密码登录（也可用于密钥等）
 	Password(username string, password string) (Consumer, error)
 	// 使用验证器，不使用的情况下，则在内存中进行验证
 	UsePasswordChecker(checker func(username string, password string) error) LoginModeSelector
