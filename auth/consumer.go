@@ -14,25 +14,50 @@ type Consumer interface {
 	GetToken() (string, error)
 	// 验证消费者token是否合法
 	CheckToken(token string) bool
+	// 获取消费者所有角色
+	GetAllRole() []Role
+	// 检查消费者是否存在特定资源权限
+	ResourceExist(resourceUri string) bool
 	// 退出登录
 	OutLogin()
-}
 
+	// 赋予消费者新的角色组
+	setRole(role ...Role)
+}
 
 func newConsumer(auth Auth, tag string, clientTag string) *consumer {
 	return &consumer{
-		auth: auth,
-		tag:  tag,
+		auth:      auth,
+		tag:       tag,
 		clientTag: clientTag,
-		fullTag: tag + clientTag,
+		fullTag:   tag + clientTag,
+		roles:     []Role{},
 	}
 }
 
 type consumer struct {
-	auth Auth
-	tag  string // 消费者标记，可以是用户名、token等具有唯一性等内容。
+	auth      Auth
+	tag       string // 消费者标记，可以是用户名、token等具有唯一性等内容。
 	clientTag string // 包含客户端标记的消费标记
-	fullTag string
+	fullTag   string
+	roles     []Role
+}
+
+func (slf *consumer) GetAllRole() []Role {
+	return slf.roles
+}
+
+func (slf *consumer) ResourceExist(resourceUri string) bool {
+	for _, r := range slf.roles {
+		if r.Exist(resourceUri) {
+			return true
+		}
+	}
+	return false
+}
+
+func (slf *consumer) setRole(role ...Role) {
+	slf.roles = role
 }
 
 func (slf *consumer) GetUsernameTag() string {
@@ -45,10 +70,10 @@ func (slf *consumer) GetClientTag() string {
 
 func (slf *consumer) CheckToken(token string) bool {
 	var (
-		err error
-		slfToken string
+		err       error
+		slfToken  string
 		slfSource []byte
-		check []byte
+		check     []byte
 	)
 
 	slfToken, err = slf.GetToken()
@@ -82,12 +107,11 @@ func (slf *consumer) GetTag() string {
 func (slf *consumer) GetToken() (string, error) {
 	if s, err := slf.auth.getSession(slf); err != nil {
 		return "", err
-	}else {
+	} else {
 		if token, err := s.Load("token"); err != nil {
 			return "", err
-		}else {
+		} else {
 			return token.(string), nil
 		}
 	}
 }
-

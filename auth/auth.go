@@ -27,11 +27,15 @@ type Auth interface {
 	AddTempAccount(username string, password string)
 	// 获取特定消费者正在多端登录的其他消费者
 	GetMultiConsumer(consumer Consumer) []Consumer
+	// 设置角色资源设置函数，将可以检查特定消费者是否拥有特定资源对权限。该函数将返回一个刷新函数
+	SetRoleCheck(roleSetter func(username string, roleHelper *RoleHelper) ([]Role, error))
+	// 刷新特定消费者角色资源
+	RefreshRole(consumer Consumer) error
 
 	// 获取临时账号密码库
 	getTempAccount() map[string]string
 	// 加入消费者
-	join(consumer Consumer, clientTag string) error
+	join(consumer Consumer) error
 	// 获取消费者session
 	getSession(consumer Consumer) (session.Session, error)
 	// 获取rsa
@@ -43,10 +47,10 @@ type Auth interface {
 }
 
 func New() (Auth, error) {
-	auth :=  &auth{
+	auth := &auth{
 		tempAccount: map[string]string{},
 		sm:          session.NewManager(),
-		rsa:  		 &crypto.Rsa{},
+		rsa:         &crypto.Rsa{},
 
 		allowManyClient: false,
 	}
@@ -58,12 +62,36 @@ func New() (Auth, error) {
 
 type auth struct {
 	sync.Mutex
-	tempAccount		map[string]string		// 临时的内存存储的用户账号密码集合
-	sm 				session.Manager			// 会话管理器
-	rsa 			*crypto.Rsa				// rsa加密
+	tempAccount map[string]string // 临时的内存存储的用户账号密码集合
+	sm          session.Manager   // 会话管理器
+	rsa         *crypto.Rsa       // rsa加密
 
-	allowManyClient bool					// 是否允许多端登录，如果不允许。将会一方登入，另一方掉线
-	clientTagFunc   func() string			// 客户端标记获取函数
+	allowManyClient bool          // 是否允许多端登录，如果不允许。将会一方登入，另一方掉线
+	clientTagFunc   func() string // 客户端标记获取函数
+
+	roleSetter func(username string, roleHelper *RoleHelper) ([]Role, error) // 消费者资源查询函数
+}
+
+func (slf *auth) RefreshRole(consumer Consumer) error {
+	if slf.roleSetter != nil {
+		roles, err := slf.roleSetter(consumer.GetUsernameTag(), &RoleHelper{})
+		if err != nil {
+			return err
+		}
+		consumer.setRole(roles...)
+	}
+	return nil
+}
+
+func (slf *auth) SetRoleCheck(roleSetter func(username string, roleHelper *RoleHelper) ([]Role, error)) {
+	// 退出所有账号
+	slf.Lock()
+	for _, c := range slf.GetAllConsumer() {
+		c.OutLogin()
+	}
+	slf.allowManyClient = false
+	slf.roleSetter = roleSetter
+	slf.Unlock()
 }
 
 func (slf *auth) GetMultiConsumer(consumer Consumer) []Consumer {
@@ -153,10 +181,14 @@ func (slf *auth) getTempAccount() map[string]string {
 	return slf.tempAccount
 }
 
-func (slf *auth) join(consumer Consumer, clientTag string) error {
+func (slf *auth) join(consumer Consumer) error {
 	// 检查是否已登录，避免重复登录
 	consumerTag := consumer.GetTag()
 	if ses, err := slf.sm.GetSession(consumerTag); err != nil {
+		err = slf.RefreshRole(consumer)
+		if err != nil {
+			return err
+		}
 		token, err := slf.newToken(consumerTag)
 		if err != nil {
 			return err
@@ -165,9 +197,13 @@ func (slf *auth) join(consumer Consumer, clientTag string) error {
 		ses = slf.sm.RegisterSession(consumerTag)
 		ses.Store(consumerTag, consumer)
 		ses.Store("token", token)
-	}else {
+	} else {
 		// 如果禁止多端登录，那么凭证将会使用不同的，并在登录前踢出其他凭证账号
 		if !slf.allowManyClient {
+			err = slf.RefreshRole(consumer)
+			if err != nil {
+				return err
+			}
 			token, err := slf.newToken(consumerTag)
 			if err != nil {
 				return err

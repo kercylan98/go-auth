@@ -20,8 +20,8 @@ func newLoginModeSelector(auth Auth) LoginModeSelector {
 }
 
 type loginModeSelector struct {
-	auth 				Auth
-	passwordChecker 	func(username string, password string) error
+	auth            Auth
+	passwordChecker func(username string, password string) error
 }
 
 func (slf *loginModeSelector) UsePasswordChecker(checker func(username string, password string) error) LoginModeSelector {
@@ -40,13 +40,14 @@ func (slf *loginModeSelector) Password(username string, password string) (Consum
 		return nil, err
 	}
 
-	loginSuccess: {
+loginSuccess:
+	{
 		var tag = "__x_x__once"
 		if slf.auth.getAllowManyClient() {
 			tag = slf.auth.getAllowManyClientFunc()()
 		}
 		consumer := newConsumer(slf.auth, username, tag)
-		if err := slf.auth.join(consumer, tag); err != nil {
+		if err := slf.auth.join(consumer); err != nil {
 			return nil, err
 		}
 		return consumer, nil
