@@ -9,7 +9,7 @@ type Consumer interface {
 	// 获取消费者的客户端标记
 	GetClientTag() string
 	// 获取用户名标记
-	GetUsernameTag() string
+	GetUsername() string
 	// 获取消费者token
 	GetToken() (string, error)
 	// 验证消费者token是否合法
@@ -60,7 +60,7 @@ func (slf *consumer) setRole(role ...Role) {
 	slf.roles = role
 }
 
-func (slf *consumer) GetUsernameTag() string {
+func (slf *consumer) GetUsername() string {
 	return slf.tag
 }
 

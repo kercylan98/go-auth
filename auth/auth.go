@@ -74,7 +74,7 @@ type auth struct {
 
 func (slf *auth) RefreshRole(consumer Consumer) error {
 	if slf.roleSetter != nil {
-		roles, err := slf.roleSetter(consumer.GetUsernameTag(), &RoleHelper{})
+		roles, err := slf.roleSetter(consumer.GetUsername(), &RoleHelper{})
 		if err != nil {
 			return err
 		}
@@ -97,7 +97,7 @@ func (slf *auth) SetRoleCheck(roleSetter func(username string, roleHelper *RoleH
 func (slf *auth) GetMultiConsumer(consumer Consumer) []Consumer {
 	var target []Consumer
 	for _, c := range slf.GetAllConsumer() {
-		if c.GetUsernameTag() == consumer.GetUsernameTag() && (c.GetClientTag() != consumer.GetClientTag()) {
+		if c.GetUsername() == consumer.GetUsername() && (c.GetClientTag() != consumer.GetClientTag()) {
 			target = append(target, c)
 		}
 	}
