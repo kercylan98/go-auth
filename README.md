@@ -4,6 +4,10 @@
 
 ## 使用
 
+> go get -u github.com/kercylan98/kkit-auth
+
+> import "github.com/kercylan98/kkit-auth/auth"
+
 ### 认证器
 ```
 auther, err := auth.New()
