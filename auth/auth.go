@@ -11,6 +11,10 @@ import (
 type Auth interface {
 	// 消费者登录
 	Login() LoginModeSelector
+	// 检查消费者是否登录
+	IsLogin(consumer Consumer) bool
+	// 根据token检查消费者是否登录
+	IsLoginWithToken(token string) bool
 	// 获取消费者
 	GetConsumer(tag string) (Consumer, error)
 	// 通过Token获取消费者
@@ -72,6 +76,20 @@ type auth struct {
 	clientTagFunc   func() string // 客户端标记获取函数
 
 	roleSetter func(username string, roleHelper *RoleHelper) ([]Role, error) // 消费者资源查询函数
+}
+
+func (slf *auth) IsLoginWithToken(token string) bool {
+	tag, err := slf.rsa.RsaDecrypt([]byte(token))
+	if err != nil {
+		return false
+	}
+	_, err = slf.GetConsumer(string(tag))
+	return err == nil
+}
+
+func (slf *auth) IsLogin(consumer Consumer) bool {
+	_, err := slf.GetConsumer(consumer.GetTag())
+	return err == nil
 }
 
 func (slf *auth) GetConsumerWithToken(token string) (Consumer, error) {
