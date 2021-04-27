@@ -63,9 +63,9 @@ func New() (Auth, error) {
 }
 
 type auth struct {
-	sync.Mutex
+	sync.Mutex                    // 备用互斥锁，sm本身支持并发操作。
 	tempAccount map[string]string // 临时的内存存储的用户账号密码集合
-	sm          session.Manager   // 会话管理器
+	sm          session.Manager   // 会话管理器（支持并发）
 	rsa         *crypto.Rsa       // rsa加密
 
 	allowManyClient bool          // 是否允许多端登录，如果不允许。将会一方登入，另一方掉线
