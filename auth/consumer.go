@@ -19,6 +19,12 @@ type Consumer interface {
 	GetAllRole() []Role
 	// 检查消费者是否存在特定资源权限
 	ResourceExist(resourceUri string) bool
+	// 存储数据到该消费者
+	Store(key interface{}, value interface{})
+	// 加载存储到数据
+	Load(key interface{}) (interface{}, bool)
+	// 删除已存储到数据
+	Del(key interface{})
 	// 退出登录
 	OutLogin()
 
@@ -41,10 +47,23 @@ func newConsumer(auth Auth, tag string, clientTag string) *consumer {
 type consumer struct {
 	sync.Mutex // 只有setRole会发生写操作，避免验证权限时改写，将其进行加锁
 	auth       Auth
-	tag        string // 消费者标记，可以是用户名等具有唯一性等内容。
-	clientTag  string // 包含客户端标记的消费标记
-	fullTag    string // 完整到标签
-	roles      []Role // 消费者拥有的角色
+	tag        string   // 消费者标记，可以是用户名等具有唯一性等内容。
+	clientTag  string   // 包含客户端标记的消费标记
+	fullTag    string   // 完整到标签
+	roles      []Role   // 消费者拥有的角色
+	data       sync.Map // 消费者可能在发起多个请求的时候被获取，在线程中运行可能会产生并发操作，所以使用sync.Map
+}
+
+func (slf *consumer) Store(key interface{}, value interface{}) {
+	slf.data.Store(key, value)
+}
+
+func (slf *consumer) Load(key interface{}) (interface{}, bool) {
+	return slf.data.Load(key)
+}
+
+func (slf *consumer) Del(key interface{}) {
+	slf.data.Delete(key)
 }
 
 func (slf *consumer) GetAllRole() []Role {
