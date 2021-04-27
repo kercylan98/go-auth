@@ -4,12 +4,12 @@ import (
 	"errors"
 )
 
-// http://www.ruanyifeng.com/blog/2019/04/oauth-grant-types.html
+// 登录模式选择器
 type LoginModeSelector interface {
 	// 密码登录（也可用于密钥等）
 	Password(username string, password string) (Consumer, error)
-	// 使用验证器，不使用的情况下，则在内存中进行验证
-	UsePasswordChecker(checker func(username string, password string) error) LoginModeSelector
+	// 使用验证器（可多个），不使用的情况下，则在内存中进行验证
+	UsePasswordChecker(checker ...func(username string, password string) error) LoginModeSelector
 }
 
 func newLoginModeSelector(auth Auth) LoginModeSelector {
@@ -21,18 +21,20 @@ func newLoginModeSelector(auth Auth) LoginModeSelector {
 
 type loginModeSelector struct {
 	auth            Auth
-	passwordChecker func(username string, password string) error
+	passwordChecker []func(username string, password string) error
 }
 
-func (slf *loginModeSelector) UsePasswordChecker(checker func(username string, password string) error) LoginModeSelector {
+func (slf *loginModeSelector) UsePasswordChecker(checker ...func(username string, password string) error) LoginModeSelector {
 	slf.passwordChecker = checker
 	return slf
 }
 
 func (slf *loginModeSelector) Password(username string, password string) (Consumer, error) {
 	if slf.passwordChecker != nil {
-		if err := slf.passwordChecker(username, password); err != nil {
-			return nil, err
+		for _, f := range slf.passwordChecker {
+			if err := f(username, password); err != nil {
+				return nil, err
+			}
 		}
 		goto loginSuccess
 	}
