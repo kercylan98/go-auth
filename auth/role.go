@@ -8,10 +8,8 @@ type Role interface {
 	GetAllResourceGroup() []ResourceGroup
 	// 获取所有资源
 	GetAllResource() []Resource
-	// 是否存在某资源
-	Exist(resourceUri string) bool
 	// 角色是否同时拥有多条资源
-	ExistMulti(resourceUri ...string) bool
+	Exist(resourceUri ...string) bool
 	// 添加资源组
 	AddResourceGroup(resourceGroup ...ResourceGroup) Role
 }
@@ -28,7 +26,7 @@ type role struct {
 	resourceGroups []ResourceGroup // 角色拥有对资源组
 }
 
-func (slf *role) ExistMulti(resourceUri ...string) bool {
+func (slf *role) Exist(resourceUri ...string) bool {
 	var count = 0
 	var match = len(resourceUri)
 	for _, group := range slf.resourceGroups {
@@ -58,15 +56,6 @@ func (slf *role) GetAllResource() []Resource {
 		resources = append(resources, group.GetAllResource()...)
 	}
 	return resources
-}
-
-func (slf *role) Exist(resourceUri string) bool {
-	for _, group := range slf.resourceGroups {
-		if group.Exist(resourceUri) {
-			return true
-		}
-	}
-	return false
 }
 
 func (slf *role) AddResourceGroup(resourceGroup ...ResourceGroup) Role {

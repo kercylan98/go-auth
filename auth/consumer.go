@@ -17,8 +17,10 @@ type Consumer interface {
 	CheckToken(token string) bool
 	// 获取消费者所有角色
 	GetAllRole() []Role
+	// 检查消费者是否拥有特定角色
+	RoleExist(roleName ...string) bool
 	// 检查消费者是否存在特定资源权限
-	ResourceExist(resourceUri string) bool
+	ResourceExist(resourceUri ...string) bool
 	// 存储数据到该消费者
 	Store(key interface{}, value interface{})
 	// 加载存储到数据
@@ -54,6 +56,22 @@ type consumer struct {
 	data       sync.Map // 消费者可能在发起多个请求的时候被获取，在线程中运行可能会产生并发操作，所以使用sync.Map
 }
 
+func (slf *consumer) RoleExist(roleName ...string) bool {
+	var count = 0
+	var match = len(roleName)
+	for _, r := range slf.roles {
+		for _, s := range roleName {
+			if r.GetName() == s {
+				count++
+				if count == match {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 func (slf *consumer) Store(key interface{}, value interface{}) {
 	slf.data.Store(key, value)
 }
@@ -70,9 +88,9 @@ func (slf *consumer) GetAllRole() []Role {
 	return slf.roles
 }
 
-func (slf *consumer) ResourceExist(resourceUri string) bool {
+func (slf *consumer) ResourceExist(resourceUri ...string) bool {
 	for _, r := range slf.roles {
-		if r.Exist(resourceUri) {
+		if r.ExistMulti(resourceUri...) {
 			return true
 		}
 	}
