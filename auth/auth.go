@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/kercylan98/kkit-core/crypto"
 	"github.com/kercylan98/kkit-session/session"
@@ -22,9 +23,9 @@ type Auth interface {
 	// 获取所有消费者
 	GetAllConsumer() []Consumer
 	// 踢出消费者
-	Ban(consumer Consumer)
+	Ban(consumer Consumer) error
 	// 设置消费者登录凭证过期时间
-	SetExpired(expired time.Duration)
+	SetExpired(expired time.Duration) error
 	// 设置禁止多端登录
 	SetUnAllowManyClient()
 	// 设置允许多端登录(需要传入客户端标记获取函数，避免一端退出全端退出)
@@ -52,10 +53,10 @@ type Auth interface {
 	getAllowManyClientFunc() func() string
 }
 
-func New() (Auth, error) {
+func New(manager session.Manager) (Auth, error) {
 	auth := &auth{
 		tempAccount: map[string]string{},
-		sm:          session.NewManager(),
+		sm:          manager,
 		rsa:         &crypto.Rsa{},
 
 		allowManyClient: false,
@@ -160,15 +161,15 @@ func (slf *auth) SetUnAllowManyClient() {
 
 func (slf *auth) SetAllowManyClient(clientTag func() string) {
 	if clientTag == nil {
-		fmt.Println("set allow many client login failed, not found client tag getter.")
+		fmt.Println("set allow many client login failed, not found client Tag getter.")
 		return
 	}
 	slf.allowManyClient = true
 	slf.clientTagFunc = clientTag
 }
 
-func (slf *auth) SetExpired(expired time.Duration) {
-	slf.sm.SetExpire(expired)
+func (slf *auth) SetExpired(expired time.Duration) error {
+	return slf.sm.SetExpire(expired)
 }
 
 func (slf *auth) getSession(consumer Consumer) (session.Session, error) {
@@ -177,19 +178,39 @@ func (slf *auth) getSession(consumer Consumer) (session.Session, error) {
 
 func (slf *auth) GetAllConsumer() []Consumer {
 	var cs []Consumer
-	for _, s := range slf.sm.GetAllSession() {
+	allSession, err := slf.sm.GetAllSession()
+	if err != nil {
+		return cs
+	}
+	for _, s := range allSession {
 		c, err := s.Load(s.GetId())
 		if err == nil {
-			cs = append(cs, c.(Consumer))
+			switch c.(type) {
+			case Consumer:
+				cs = append(cs, c.(Consumer))
+			default:
+				jd, err := json.Marshal(c)
+				if err != nil {
+					continue
+				}
+				var formatC = new(consumer)
+				err = json.Unmarshal(jd, formatC)
+				if err != nil {
+					continue
+				}
+				formatC.auth = slf
+				cs = append(cs, formatC)
+			}
 		}
 	}
 	return cs
 }
 
-func (slf *auth) Ban(consumer Consumer) {
+func (slf *auth) Ban(consumer Consumer) error {
 	if s, err := slf.getSession(consumer); err == nil {
-		slf.sm.UnRegisterSession(s)
+		return slf.sm.UnRegisterSession(s)
 	}
+	return nil
 }
 
 func (slf *auth) GetConsumer(tag string) (Consumer, error) {
@@ -198,7 +219,43 @@ func (slf *auth) GetConsumer(tag string) (Consumer, error) {
 		return nil, err
 	}
 	c, err := s.Load(tag)
-	return c.(Consumer), err
+	if err == nil {
+		switch c.(type) {
+		case Consumer:
+			return c.(Consumer), nil
+		default:
+			// 完整消费者信息
+			cMap := c.(map[string]interface{})
+			// 提取角色信息
+			roleInfo := cMap["Roles"]
+			roleInfoJson, err := json.Marshal(roleInfo)
+			if err != nil {
+				return nil, err
+			}
+			// 转化到角色信息模型
+			roleInfoModel := new(roleModel)
+			err = json.Unmarshal(roleInfoJson, roleInfoModel)
+			if err != nil {
+				return nil, err
+			}
+
+			delete(cMap, "Roles")
+
+			jd, err := json.Marshal(c)
+			if err != nil {
+				return nil, err
+			}
+			var formatC = new(consumer)
+			err = json.Unmarshal(jd, formatC)
+			if err != nil {
+				return nil, err
+			}
+			formatC.auth = slf
+			formatC.Roles = roleInfoModel.toRoles()
+			return formatC, nil
+		}
+	}
+	return nil, err
 }
 
 func (slf *auth) Login() LoginModeSelector {
@@ -222,9 +279,18 @@ func (slf *auth) join(consumer Consumer) error {
 			return err
 		}
 
-		ses = slf.sm.RegisterSession(consumerTag)
-		ses.Store(consumerTag, consumer)
-		ses.Store("token", token)
+		ses, err = slf.sm.RegisterSession(consumerTag)
+		if err != nil {
+			return err
+		}
+		err = ses.Store(consumerTag, consumer)
+		if err != nil {
+			return err
+		}
+		err = ses.Store("token", token)
+		if err != nil {
+			return err
+		}
 	} else {
 		// 如果禁止多端登录，那么凭证将会使用不同的，并在登录前踢出其他凭证账号
 		if !slf.allowManyClient {
@@ -237,7 +303,10 @@ func (slf *auth) join(consumer Consumer) error {
 				return err
 			}
 			// 刷新token
-			ses.Store("token", token)
+			err = ses.Store("token", token)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

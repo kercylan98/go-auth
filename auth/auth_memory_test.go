@@ -1,11 +1,12 @@
 package auth
 
 import (
+	"github.com/kercylan98/kkit-session/session"
 	"testing"
 )
 
 func TestNew(t *testing.T) {
-	_, err := New()
+	_, err := New(session.NewManagerMemory())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -13,7 +14,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestAuth_Login(t *testing.T) {
-	auth, err := New()
+	auth, err := New(session.NewManagerMemory())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +45,7 @@ func TestAuth_Login(t *testing.T) {
 }
 
 func TestAuth_SetRoleCheck(t *testing.T) {
-	auth, err := New()
+	auth, err := New(session.NewManagerMemory())
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -22,13 +22,13 @@ type Consumer interface {
 	// 检查消费者是否存在特定资源权限
 	ResourceExist(resourceUri ...string) bool
 	// 存储数据到该消费者
-	Store(key interface{}, value interface{})
+	Store(key string, value interface{}) error
 	// 加载存储到数据
-	Load(key interface{}) (interface{}, bool)
+	Load(key string) (interface{}, error)
 	// 删除已存储到数据
-	Del(key interface{})
+	Del(key string) error
 	// 退出登录
-	OutLogin()
+	OutLogin() error
 
 	// 获取消费者的客户端标记
 	getClientTag() string
@@ -39,27 +39,26 @@ type Consumer interface {
 func newConsumer(auth Auth, tag string, clientTag string) *consumer {
 	return &consumer{
 		auth:      auth,
-		tag:       tag,
-		clientTag: clientTag,
-		fullTag:   tag + clientTag,
-		roles:     []Role{},
+		Tag:       tag,
+		ClientTag: clientTag,
+		FullTag:   tag + clientTag,
+		Roles:     []Role{},
 	}
 }
 
 type consumer struct {
 	sync.Mutex // 只有setRole会发生写操作，避免验证权限时改写，将其进行加锁
 	auth       Auth
-	tag        string   // 消费者标记，可以是用户名等具有唯一性等内容。
-	clientTag  string   // 包含客户端标记的消费标记
-	fullTag    string   // 完整到标签
-	roles      []Role   // 消费者拥有的角色
-	data       sync.Map // 消费者可能在发起多个请求的时候被获取，在线程中运行可能会产生并发操作，所以使用sync.Map
+	Tag        string // 消费者标记，可以是用户名等具有唯一性等内容。
+	ClientTag  string // 包含客户端标记的消费标记
+	FullTag    string // 完整到标签
+	Roles      []Role // 消费者拥有的角色
 }
 
 func (slf *consumer) RoleExist(roleName ...string) bool {
 	var count = 0
 	var match = len(roleName)
-	for _, r := range slf.roles {
+	for _, r := range slf.Roles {
 		for _, s := range roleName {
 			if r.GetName() == s {
 				count++
@@ -72,43 +71,60 @@ func (slf *consumer) RoleExist(roleName ...string) bool {
 	return false
 }
 
-func (slf *consumer) Store(key interface{}, value interface{}) {
-	slf.data.Store(key, value)
+func (slf *consumer) Store(key string, value interface{}) error {
+	session, err := slf.auth.getSession(slf)
+	if err != nil {
+		return err
+	}
+	return session.Store(key, value)
 }
 
-func (slf *consumer) Load(key interface{}) (interface{}, bool) {
-	return slf.data.Load(key)
+func (slf *consumer) Load(key string) (interface{}, error) {
+	session, err := slf.auth.getSession(slf)
+	if err != nil {
+		return nil, err
+	}
+
+	return session.Load(key)
 }
 
-func (slf *consumer) Del(key interface{}) {
-	slf.data.Delete(key)
+func (slf *consumer) Del(key string) error {
+	session, err := slf.auth.getSession(slf)
+	if err != nil {
+		return err
+	}
+	return session.Del(key)
 }
 
 func (slf *consumer) GetAllRole() []Role {
-	return slf.roles
+	var roles []Role
+	for _, r := range slf.Roles {
+		roles = append(roles, r)
+	}
+	return roles
 }
 
 func (slf *consumer) ResourceExist(resourceUri ...string) bool {
-	for _, r := range slf.roles {
-		if r.ExistMulti(resourceUri...) {
+	for _, r := range slf.Roles {
+		if r.Exist(resourceUri...) {
 			return true
 		}
 	}
 	return false
 }
 
-func (slf *consumer) setRole(role ...Role) {
+func (slf *consumer) setRole(roles ...Role) {
 	slf.Lock()
-	slf.roles = role
+	slf.Roles = roles
 	slf.Unlock()
 }
 
 func (slf *consumer) GetUsername() string {
-	return slf.tag
+	return slf.Tag
 }
 
 func (slf *consumer) getClientTag() string {
-	return slf.clientTag
+	return slf.ClientTag
 }
 
 func (slf *consumer) CheckToken(token string) bool {
@@ -139,12 +155,12 @@ func (slf *consumer) CheckToken(token string) bool {
 	return string(slfSource) == string(check)
 }
 
-func (slf *consumer) OutLogin() {
-	slf.auth.Ban(slf)
+func (slf *consumer) OutLogin() error {
+	return slf.auth.Ban(slf)
 }
 
 func (slf *consumer) GetTag() string {
-	return slf.fullTag
+	return slf.FullTag
 }
 
 func (slf *consumer) GetToken() (string, error) {

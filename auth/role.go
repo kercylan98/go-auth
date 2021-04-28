@@ -16,20 +16,20 @@ type Role interface {
 
 func newRole(name string) *role {
 	return &role{
-		name:           name,
-		resourceGroups: []ResourceGroup{},
+		Name:           name,
+		ResourceGroups: []ResourceGroup{},
 	}
 }
 
 type role struct {
-	name           string          // 角色名称
-	resourceGroups []ResourceGroup // 角色拥有对资源组
+	Name           string          // 角色名称
+	ResourceGroups []ResourceGroup // 角色拥有对资源组
 }
 
 func (slf *role) Exist(resourceUri ...string) bool {
 	var count = 0
 	var match = len(resourceUri)
-	for _, group := range slf.resourceGroups {
+	for _, group := range slf.ResourceGroups {
 		for _, s := range resourceUri {
 			if group.Exist(s) {
 				count++
@@ -43,22 +43,22 @@ func (slf *role) Exist(resourceUri ...string) bool {
 }
 
 func (slf *role) GetName() string {
-	return slf.name
+	return slf.Name
 }
 
 func (slf *role) GetAllResourceGroup() []ResourceGroup {
-	return slf.resourceGroups
+	return slf.ResourceGroups
 }
 
 func (slf *role) GetAllResource() []Resource {
 	var resources []Resource
-	for _, group := range slf.resourceGroups {
+	for _, group := range slf.ResourceGroups {
 		resources = append(resources, group.GetAllResource()...)
 	}
 	return resources
 }
 
 func (slf *role) AddResourceGroup(resourceGroup ...ResourceGroup) Role {
-	slf.resourceGroups = append(slf.resourceGroups, resourceGroup...)
+	slf.ResourceGroups = append(slf.ResourceGroups, resourceGroup...)
 	return slf
 }

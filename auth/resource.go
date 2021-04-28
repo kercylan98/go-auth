@@ -10,20 +10,20 @@ type Resource interface {
 
 func newResource(name string, uri string) *resource {
 	return &resource{
-		name: name,
-		uri:  uri,
+		Name: name,
+		Uri:  uri,
 	}
 }
 
 type resource struct {
-	name string // 资源名称
-	uri  string // uri
+	Name string // 资源名称
+	Uri  string // Uri
 }
 
 func (slf *resource) GetName() string {
-	return slf.name
+	return slf.Name
 }
 
 func (slf *resource) GetURI() string {
-	return slf.uri
+	return slf.Uri
 }
