@@ -30,7 +30,7 @@ func BenchmarkAuth_Simulated(b *testing.B) {
 		return uuid.NewV4().String()
 	})
 
-	b.N = 1000     // 可以修改执行次数
+	b.N = 10       // 可以修改执行次数
 	b.StartTimer() // 重新开始时间计时
 	for i := 0; i < b.N; i++ {
 		account := fmt.Sprint(uuid.NewV4())
@@ -48,13 +48,13 @@ func BenchmarkAuth_Simulated(b *testing.B) {
 		b.Log("check role: test-role, ", consumer.RoleExist("test-role"))
 		b.Log("all consumer: ", fmt.Sprint(len(auth.GetAllConsumer())))
 
-		//err = consumer.OutLogin()
-		//if err != nil {
-		//	b.Fatal("error: ", err, "\n#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#")
-		//}else {
-		//	b.Log("out Login.")
-		//}
-		//b.Log("#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#")
+		err = consumer.OutLogin()
+		if err != nil {
+			b.Fatal("error: ", err, "\n#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#")
+		} else {
+			b.Log("out Login.")
+		}
+		b.Log("#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#")
 	}
 }
 
