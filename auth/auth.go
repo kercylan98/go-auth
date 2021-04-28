@@ -189,17 +189,11 @@ func (slf *auth) GetAllConsumer() []Consumer {
 			case Consumer:
 				cs = append(cs, c.(Consumer))
 			default:
-				jd, err := json.Marshal(c)
+				c, err := slf.jsonToConsumer(c)
 				if err != nil {
 					continue
 				}
-				var formatC = new(consumer)
-				err = json.Unmarshal(jd, formatC)
-				if err != nil {
-					continue
-				}
-				formatC.auth = slf
-				cs = append(cs, formatC)
+				cs = append(cs, c)
 			}
 		}
 	}
@@ -224,35 +218,7 @@ func (slf *auth) GetConsumer(tag string) (Consumer, error) {
 		case Consumer:
 			return c.(Consumer), nil
 		default:
-			// 完整消费者信息
-			cMap := c.(map[string]interface{})
-			// 提取角色信息
-			roleInfo := cMap["Roles"]
-			roleInfoJson, err := json.Marshal(roleInfo)
-			if err != nil {
-				return nil, err
-			}
-			// 转化到角色信息模型
-			roleInfoModel := new(roleModel)
-			err = json.Unmarshal(roleInfoJson, roleInfoModel)
-			if err != nil {
-				return nil, err
-			}
-
-			delete(cMap, "Roles")
-
-			jd, err := json.Marshal(c)
-			if err != nil {
-				return nil, err
-			}
-			var formatC = new(consumer)
-			err = json.Unmarshal(jd, formatC)
-			if err != nil {
-				return nil, err
-			}
-			formatC.auth = slf
-			formatC.Roles = roleInfoModel.toRoles()
-			return formatC, nil
+			return slf.jsonToConsumer(c)
 		}
 	}
 	return nil, err
@@ -320,4 +286,36 @@ func (slf *auth) newToken(tag string) (string, error) {
 		return "", err
 	}
 	return string(token), nil
+}
+
+func (slf *auth) jsonToConsumer(redisConsumerInterface interface{}) (Consumer, error) {
+	// 完整消费者信息
+	cMap := redisConsumerInterface.(map[string]interface{})
+	// 提取角色信息
+	roleInfo := cMap["Roles"]
+	roleInfoJson, err := json.Marshal(roleInfo)
+	if err != nil {
+		return nil, err
+	}
+	// 转化到角色信息模型
+	roleInfoModel := new(roleModel)
+	err = json.Unmarshal(roleInfoJson, roleInfoModel)
+	if err != nil {
+		return nil, err
+	}
+
+	delete(cMap, "Roles")
+
+	jd, err := json.Marshal(redisConsumerInterface)
+	if err != nil {
+		return nil, err
+	}
+	var formatC = new(consumer)
+	err = json.Unmarshal(jd, formatC)
+	if err != nil {
+		return nil, err
+	}
+	formatC.auth = slf
+	formatC.Roles = roleInfoModel.toRoles()
+	return formatC, nil
 }
