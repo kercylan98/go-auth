@@ -5,29 +5,29 @@ import (
 	"sync"
 )
 
-// 消费者模型定义
+// Consumer 消费者模型定义
 type Consumer interface {
-	// 获取完整消费者标记
+	// GetTag 获取完整消费者标记
 	GetTag() string
-	// 获取用户名标记
+	// GetUsername 获取用户名标记
 	GetUsername() string
-	// 获取消费者token
+	// GetToken 获取消费者token
 	GetToken() (string, error)
-	// 验证消费者token是否合法
+	// CheckToken 验证消费者token是否合法
 	CheckToken(token string) bool
-	// 获取消费者所有角色
+	// GetAllRole 获取消费者所有角色
 	GetAllRole() []Role
-	// 检查消费者是否拥有特定角色
+	// RoleExist 检查消费者是否拥有特定角色
 	RoleExist(roleName ...string) bool
-	// 检查消费者是否存在特定资源权限
+	// ResourceExist 检查消费者是否存在特定资源权限
 	ResourceExist(resourceUri ...string) bool
-	// 存储数据到该消费者
+	// Store 存储数据到该消费者
 	Store(key string, value interface{}) error
-	// 加载存储到数据
+	// Load 加载存储到数据
 	Load(key string) (interface{}, error)
-	// 删除已存储到数据
+	// Del 删除已存储到数据
 	Del(key string) error
-	// 退出登录
+	// OutLogin 退出登录
 	OutLogin() error
 
 	// 获取消费者的客户端标记

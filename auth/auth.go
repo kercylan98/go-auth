@@ -3,40 +3,40 @@ package auth
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kercylan98/kkit-core/crypto"
-	"github.com/kercylan98/kkit-session/session"
+	"github.com/kercylan98/go-session/session"
+	"github.com/kercylan98/klib/crypto"
 	"sync"
 	"time"
 )
 
 type Auth interface {
-	// 消费者登录
+	// Login 消费者登录
 	Login() LoginModeSelector
-	// 检查消费者是否登录
+	// IsLogin 检查消费者是否登录
 	IsLogin(consumer Consumer) bool
-	// 根据token检查消费者是否登录
+	// IsLoginWithToken 根据token检查消费者是否登录
 	IsLoginWithToken(token string) bool
-	// 获取消费者
+	// GetConsumer 获取消费者
 	GetConsumer(tag string) (Consumer, error)
-	// 通过Token获取消费者
+	// GetConsumerWithToken 通过Token获取消费者
 	GetConsumerWithToken(token string) (Consumer, error)
-	// 获取所有消费者
+	// GetAllConsumer 获取所有消费者
 	GetAllConsumer() []Consumer
-	// 踢出消费者
+	// Ban 踢出消费者
 	Ban(consumer Consumer) error
-	// 设置消费者登录凭证过期时间
+	// SetExpired 设置消费者登录凭证过期时间
 	SetExpired(expired time.Duration) error
-	// 设置禁止多端登录
+	// SetUnAllowManyClient 设置禁止多端登录
 	SetUnAllowManyClient()
-	// 设置允许多端登录(需要传入客户端标记获取函数，避免一端退出全端退出)
+	// SetAllowManyClient 设置允许多端登录(需要传入客户端标记获取函数，避免一端退出全端退出)
 	SetAllowManyClient(clientTag func() string)
-	// 添加临时账号
+	// AddTempAccount 添加临时账号
 	AddTempAccount(username string, password string)
-	// 获取特定消费者正在多端登录的其他消费者
+	// GetMultiConsumer 获取特定消费者正在多端登录的其他消费者
 	GetMultiConsumer(consumer Consumer) []Consumer
-	// 设置角色资源设置函数，将可以检查特定消费者是否拥有特定资源对权限。该函数将返回一个刷新函数
+	// SetRoleCheck 设置角色资源设置函数，将可以检查特定消费者是否拥有特定资源对权限。该函数将返回一个刷新函数
 	SetRoleCheck(roleSetter func(username string, roleHelper *RoleHelper) ([]Role, error))
-	// 刷新特定消费者角色资源
+	// RefreshRole 刷新特定消费者角色资源
 	RefreshRole(consumer Consumer) error
 
 	// 获取临时账号密码库

@@ -1,14 +1,14 @@
-# kkit-auth
+# 介绍
 
 > 用于实现登录、鉴权的认证库
 
 ## 使用
 
-> go get -u github.com/kercylan98/kkit-auth
+> go get -u github.com/kercylan98/go-auth
 
-> import "github.com/kercylan98/kkit-auth/auth"
+> import "github.com/kercylan98/go-auth/auth"
 
-### 认证器
+# 认证器
 ```
 auther, err := auth.New()
 if err != nil {
@@ -71,7 +71,7 @@ consumer.GetAllRole()
 // 检测消费者是否用于该uri的权限
 consumer.ResourceExist("/api/project/create")
 ```
-## 配置
+# 配置
 ```
 // 设置登录失效时间（设置时将会为所有已登录消费者重置失效时间）
 auther.SetExpired(30 *  time.Minute)

@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"github.com/kercylan98/kkit-session/session"
+	"github.com/kercylan98/go-session/session"
 	"testing"
 )
 

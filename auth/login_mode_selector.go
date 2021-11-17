@@ -4,11 +4,11 @@ import (
 	"errors"
 )
 
-// 登录模式选择器
+// LoginModeSelector 登录模式选择器
 type LoginModeSelector interface {
-	// 密码登录（也可用于密钥等）
+	// Password 密码登录（也可用于密钥等）
 	Password(username string, password string) (Consumer, error)
-	// 使用验证器（可多个），不使用的情况下，则在内存中进行验证
+	// UsePasswordChecker 使用验证器（可多个），不使用的情况下，则在内存中进行验证
 	UsePasswordChecker(checker ...func(username string, password string) error) LoginModeSelector
 }
 

@@ -1,18 +1,18 @@
 package auth
 
-// 资源组
+// ResourceGroup 资源组
 type ResourceGroup interface {
-	// 获取资源组名称
+	// GetName 获取资源组名称
 	GetName() string
-	// 获取资源数量
+	// GetResourceCount 获取资源数量
 	GetResourceCount() int
-	// 获取所有资源
+	// GetAllResource 获取所有资源
 	GetAllResource() []Resource
-	// 添加资源
+	// Add 添加资源
 	Add(resource ...Resource) ResourceGroup
-	// 资源是否存在
+	// Exist 资源是否存在
 	Exist(resourceUri string) bool
-	// 通过uri获取资源
+	// GetResource 通过uri获取资源
 	GetResource(uri string) Resource
 }
 

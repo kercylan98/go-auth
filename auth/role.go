@@ -1,16 +1,16 @@
 package auth
 
-// 角色接口
+// Role 角色接口
 type Role interface {
-	// 获取角色名称
+	// GetName 获取角色名称
 	GetName() string
-	// 获取所有资源组
+	// GetAllResourceGroup 获取所有资源组
 	GetAllResourceGroup() []ResourceGroup
-	// 获取所有资源
+	// GetAllResource 获取所有资源
 	GetAllResource() []Resource
-	// 角色是否同时拥有多条资源
+	// Exist 角色是否同时拥有多条资源
 	Exist(resourceUri ...string) bool
-	// 添加资源组
+	// AddResourceGroup 添加资源组
 	AddResourceGroup(resourceGroup ...ResourceGroup) Role
 }
 

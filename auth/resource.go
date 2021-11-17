@@ -1,10 +1,10 @@
 package auth
 
-// 权限资源接口
+// Resource 权限资源接口
 type Resource interface {
-	// 获取资源名称
+	// GetName 获取资源名称
 	GetName() string
-	// 获取资源URI
+	// GetURI 获取资源URI
 	GetURI() string
 }
 

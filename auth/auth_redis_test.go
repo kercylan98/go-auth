@@ -2,7 +2,7 @@ package auth
 
 import (
 	"fmt"
-	"github.com/kercylan98/kkit-session/session"
+	"github.com/kercylan98/go-session/session"
 	uuid "github.com/satori/go.uuid"
 	"testing"
 	"time"
