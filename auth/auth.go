@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kercylan98/go-session/session"
-	"github.com/kercylan98/klib/crypto"
+	"github.com/kercylan98/klib/cipher"
 	"sync"
 	"time"
 )
@@ -46,7 +46,7 @@ type Auth interface {
 	// 获取消费者session
 	getSession(consumer Consumer) (session.Session, error)
 	// 获取rsa
-	getRsa() *crypto.Rsa
+	getRsa() *cipher.RSA
 	// 获取是否允许多端登录
 	getAllowManyClient() bool
 	// 获取客户端标记生成深航
@@ -57,7 +57,7 @@ func New(manager session.Manager) (Auth, error) {
 	auth := &auth{
 		tempAccount: map[string]string{},
 		sm:          manager,
-		rsa:         &crypto.Rsa{},
+		rsa:         &cipher.RSA{},
 
 		allowManyClient: false,
 	}
@@ -71,7 +71,7 @@ type auth struct {
 	sync.Mutex                    // 备用互斥锁，sm本身支持并发操作。
 	tempAccount map[string]string // 临时的内存存储的用户账号密码集合
 	sm          session.Manager   // 会话管理器（支持并发）
-	rsa         *crypto.Rsa       // rsa加密
+	rsa         *cipher.RSA       // rsa加密
 
 	allowManyClient bool          // 是否允许多端登录，如果不允许。将会一方登入，另一方掉线
 	clientTagFunc   func() string // 客户端标记获取函数
@@ -141,7 +141,7 @@ func (slf *auth) getAllowManyClient() bool {
 	return slf.allowManyClient
 }
 
-func (slf *auth) getRsa() *crypto.Rsa {
+func (slf *auth) getRsa() *cipher.RSA {
 	return slf.rsa
 }
 
